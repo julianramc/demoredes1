@@ -217,7 +217,7 @@ def main():
         st.session_state.analyzer = TransmissionLineAnalyzer()
     
     # Encabezado
-    st.title("⚡ Analizador de Rendimiento de Líneas de Transmisión Eléctrica")
+    st.title("⚡ Analizador de Rendimiento de Líneas de Transmisión Eléctrica Julián Ramírez- Juan Tobon-IUPC")
     st.markdown("""
     <div style='background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%); padding: 1rem; border-radius: 10px; margin-bottom: 2rem;'>
         <h3 style='color: white; margin: 0;'>Herramienta de Análisis Avanzado para Sistemas de Transmisión Eléctrica</h3>
@@ -393,4 +393,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 # To run this app, use the command: streamlit run demo_grupo7.py
