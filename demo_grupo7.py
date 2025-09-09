@@ -121,7 +121,7 @@ def get_regulatory_context(regulation_percent, voltage_kV, efficiency_percent):
     return context
 
 class TransmissionLineAnalyzer:
-    """Demo Analizador de líneas de transmisión Julián Ramírez-Juan Tobón - Versión Mejorada"""
+    """Analizador de líneas de transmisión"""
     
     def __init__(self):
         self.results_history = []
@@ -143,7 +143,7 @@ class TransmissionLineAnalyzer:
                 "losses_W": losses_W,
                 "efficiency_%": efficiency,
                 "losses_percentage": (losses_MW / power_MVA) * 100 if power_MVA > 0 else 0,
-                "current_density_A_per_mm2": current_A / (np.pi * (1.77)**2) if power_MVA > 0 else 0  # Aproximado
+                "current_density_A_per_mm2": current_A / (np.pi * (1.77)**2) if power_MVA > 0 else 0
             }
         except Exception as e:
             return {"error": f"Error en cálculo de pérdidas: {str(e)}"}
@@ -179,7 +179,7 @@ class TransmissionLineAnalyzer:
                 return {"regulation_%": float('inf'), "voltage_drop_kV": 0, "error": "Voltaje de recepción inválido"}
             
             regulation = ((V_R_no_load - V_R_full_load) / V_R_full_load) * 100
-            voltage_drop = (V_R_no_load - V_R_full_load) * np.sqrt(3) / 1000  # kV línea a línea
+            voltage_drop = (V_R_no_load - V_R_full_load) * np.sqrt(3) / 1000
             
             return {
                 "regulation_%": regulation,
@@ -206,7 +206,6 @@ class TransmissionLineAnalyzer:
             has_corona = V_op_kV_phase > Vd_kV_phase
             safety_margin = ((Vd_kV_phase - V_op_kV_phase) / V_op_kV_phase) * 100
             
-            # Evaluación de riesgo mejorada
             if safety_margin > 20:
                 risk_level = "Riesgo Bajo"
                 risk_color = "green"
@@ -237,7 +236,6 @@ class TransmissionLineAnalyzer:
     def generate_performance_analysis(self, line_params: dict, operating_conditions: dict, 
                                     environmental_conditions: dict) -> dict:
         """Genera un análisis de rendimiento completo"""
-        # Extraer parámetros
         R_ohm = line_params["resistance_total_ohm"]
         L_H = line_params["inductance_total_H"]
         C_F = line_params["capacitance_total_F"]
@@ -253,7 +251,6 @@ class TransmissionLineAnalyzer:
         temp_C = environmental_conditions["temperature_C"]
         pressure_atm = environmental_conditions["pressure_atm"]
         
-        # Realizar cálculos
         losses_analysis = self.calculate_power_losses(V_R_kV, S_R_MVA, R_ohm)
         regulation_analysis = self.calculate_voltage_regulation(
             R_ohm, L_H, C_F, length_km, V_R_kV, S_R_MVA, pf_R
@@ -272,47 +269,34 @@ class TransmissionLineAnalyzer:
 def create_advanced_visualizations(analysis_results: dict, line_params: dict):
     """Crea visualizaciones avanzadas usando Plotly"""
     
-    # 1. Diagrama de Fasores
     def create_phasor_diagram():
         regulation_data = analysis_results["regulation"]
-        
-        # Datos del fasor (simplificado)
         V_send = regulation_data["sending_voltage_kV"]
-        V_recv = regulation_data["sending_voltage_kV"] - regulation_data["voltage_drop_kV"]
+        V_recv = line_params.get("voltage_kV", 230)
         
         fig = go.Figure()
         
-        # Fasor de voltaje de envío
         fig.add_trace(go.Scatter(
             x=[0, V_send * 0.8], y=[0, V_send * 0.6],
-            mode='lines+markers+text',
-            name='Voltaje Envío',
+            mode='lines+markers+text', name='Voltaje Envío',
             line=dict(color='blue', width=4),
-            text=['', f'V_s = {V_send:.1f} kV'],
-            textposition='top right'
+            text=['', f'V_s = {V_send:.1f} kV'], textposition='top right'
         ))
         
-        # Fasor de voltaje de recepción
         fig.add_trace(go.Scatter(
             x=[0, V_recv * 0.9], y=[0, V_recv * 0.3],
-            mode='lines+markers+text',
-            name='Voltaje Recepción',
+            mode='lines+markers+text', name='Voltaje Recepción',
             line=dict(color='red', width=4),
-            text=['', f'V_r = {V_recv:.1f} kV'],
-            textposition='bottom right'
+            text=['', f'V_r = {V_recv:.1f} kV'], textposition='bottom right'
         ))
         
         fig.update_layout(
             title="Diagrama Fasorial Simplificado",
-            xaxis_title="Componente Real (kV)",
-            yaxis_title="Componente Imaginaria (kV)",
-            showlegend=True,
-            width=500, height=400
+            xaxis_title="Componente Real (kV)", yaxis_title="Componente Imaginaria (kV)",
+            showlegend=True, width=500, height=400
         )
-        
         return fig
     
-    # 2. Análisis de Sensibilidad de Potencia
     def create_power_sensitivity_analysis():
         power_range = np.linspace(50, 1000, 20)
         losses_range = []
@@ -325,7 +309,6 @@ def create_advanced_visualizations(analysis_results: dict, line_params: dict):
             current = (power * 1e6) / (np.sqrt(3) * base_voltage * 1e3)
             losses = 3 * (current ** 2) * base_resistance / 1e6
             efficiency = ((power - losses) / power) * 100
-            
             losses_range.append(losses)
             efficiency_range.append(efficiency)
         
@@ -335,73 +318,53 @@ def create_advanced_visualizations(analysis_results: dict, line_params: dict):
             vertical_spacing=0.1
         )
         
-        # Gráfico de pérdidas
         fig.add_trace(
-            go.Scatter(x=power_range, y=losses_range, name='Pérdidas (MW)', 
-                      line=dict(color='red', width=3)),
+            go.Scatter(x=power_range, y=losses_range, name='Pérdidas (MW)', line=dict(color='red', width=3)),
             row=1, col=1
         )
-        
-        # Gráfico de eficiencia
         fig.add_trace(
-            go.Scatter(x=power_range, y=efficiency_range, name='Eficiencia (%)', 
-                      line=dict(color='green', width=3)),
+            go.Scatter(x=power_range, y=efficiency_range, name='Eficiencia (%)', line=dict(color='green', width=3)),
             row=2, col=1
         )
         
         fig.update_xaxes(title_text="Potencia Transmitida (MVA)", row=2, col=1)
         fig.update_yaxes(title_text="Pérdidas (MW)", row=1, col=1)
         fig.update_yaxes(title_text="Eficiencia (%)", row=2, col=1)
-        
         fig.update_layout(height=600, title_text="Análisis de Sensibilidad del Sistema")
-        
         return fig
     
-    # 3. Perfil de Voltaje a lo largo de la línea
     def create_voltage_profile():
         length = line_params.get("length_km", 200)
         positions = np.linspace(0, length, 50)
-        
         V_send = analysis_results["regulation"]["sending_voltage_kV"]
-        V_recv = V_send - analysis_results["regulation"]["voltage_drop_kV"]
+        V_recv = line_params.get("voltage_kV", 230)
         
-        # Perfil lineal simplificado (en realidad sería exponencial)
         voltage_profile = V_send - (V_send - V_recv) * (positions / length)
         
         fig = go.Figure()
         fig.add_trace(go.Scatter(
             x=positions, y=voltage_profile,
-            mode='lines+markers',
-            name='Perfil de Voltaje',
-            line=dict(color='purple', width=3),
-            fill='tonexty'
+            mode='lines+markers', name='Perfil de Voltaje',
+            line=dict(color='purple', width=3), fill='tonexty'
         ))
         
-        fig.add_hline(y=V_send, line_dash="dash", line_color="blue", 
-                     annotation_text=f"Voltaje Envío: {V_send:.1f} kV")
-        fig.add_hline(y=V_recv, line_dash="dash", line_color="red", 
-                     annotation_text=f"Voltaje Recepción: {V_recv:.1f} kV")
+        fig.add_hline(y=V_send, line_dash="dash", line_color="blue", annotation_text=f"Voltaje Envío: {V_send:.1f} kV")
+        fig.add_hline(y=V_recv, line_dash="dash", line_color="red", annotation_text=f"Voltaje Recepción: {V_recv:.1f} kV")
         
         fig.update_layout(
             title="Perfil de Voltaje a lo largo de la Línea",
-            xaxis_title="Distancia desde el Envío (km)",
-            yaxis_title="Voltaje (kV)",
+            xaxis_title="Distancia desde el Envío (km)", yaxis_title="Voltaje (kV)",
             width=600, height=400
         )
-        
         return fig
     
     return create_phasor_diagram(), create_power_sensitivity_analysis(), create_voltage_profile()
 
 def create_efficiency_gauge(efficiency_percent: float) -> str:
     """Crea un medidor de eficiencia basado en HTML"""
-    # Determinar el color según la eficiencia
-    if efficiency_percent >= 95:
-        color = "#28a745"  # Verde
-    elif efficiency_percent >= 90:
-        color = "#ffc107"  # Amarillo
-    else:
-        color = "#dc3545"  # Rojo
+    if efficiency_percent >= 95: color = "#28a745"
+    elif efficiency_percent >= 90: color = "#ffc107"
+    else: color = "#dc3545"
     
     return f"""
     <div style="text-align: center; padding: 20px;">
@@ -411,12 +374,10 @@ def create_efficiency_gauge(efficiency_percent: float) -> str:
                 <circle cx="100" cy="100" r="80" fill="none" stroke="{color}" stroke-width="20"
                         stroke-dasharray="{efficiency_percent * 5.03} 502.4" 
                         stroke-dashoffset="125.6" transform="rotate(-90 100 100)"/>
-                <text x="100" y="100" text-anchor="middle" dy="0.3em" 
-                      style="font-size: 24px; font-weight: bold; fill: {color};">
+                <text x="100" y="100" text-anchor="middle" dy="0.3em" style="font-size: 24px; font-weight: bold; fill: {color};">
                     {efficiency_percent:.1f}%
                 </text>
-                <text x="100" y="130" text-anchor="middle" 
-                      style="font-size: 14px; fill: #666;">
+                <text x="100" y="130" text-anchor="middle" style="font-size: 14px; fill: #666;">
                     Eficiencia
                 </text>
             </svg>
@@ -426,17 +387,15 @@ def create_efficiency_gauge(efficiency_percent: float) -> str:
 
 def main():
     st.set_page_config(
-        page_title="Analizador de Líneas de Transmisión - Mejorado",
+        page_title="Analizador de Líneas de Transmisión",
         page_icon="⚡",
         layout="wide",
         initial_sidebar_state="expanded"
     )
     
-    # Inicializar analizador
     if 'analyzer' not in st.session_state:
         st.session_state.analyzer = TransmissionLineAnalyzer()
     
-    # Encabezado mejorado
     st.title("⚡ Analizador Avanzado de Líneas de Transmisión Eléctrica")
     st.markdown("""
     <div style='background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%); padding: 1rem; border-radius: 10px; margin-bottom: 2rem;'>
@@ -448,167 +407,103 @@ def main():
     with st.sidebar:
         st.header("🔧 Configuración del Sistema")
         
-        # Parámetros de la Línea
         with st.expander("📏 Geometría de la Línea y Conductor", expanded=True):
-            length_km = st.number_input("Longitud de la Línea", min_value=1.0, max_value=1000.0, 
-                                      value=200.0, step=10.0, help="Longitud total en kilómetros")
-            st.caption("📐 Unidad: km | Rango típico: 50-500 km")
-            
-            radius_cm = st.number_input("Radio del Conductor", min_value=0.5, max_value=10.0, 
-                                      value=1.77, step=0.1, help="Radio exterior del conductor")
-            st.caption("📐 Unidad: cm | Típico: 1.0-3.0 cm")
-            
-            DMG_cm = st.number_input("Distancia Media Geométrica (DMG)", min_value=100.0, max_value=2000.0, 
-                                   value=750.0, step=25.0, help="Entre conductores de fases")
-            st.caption("📐 Unidad: cm | Debe ser >> radio del conductor")
+            length_km = st.number_input("Longitud de la Línea (km)", 1.0, 1000.0, 180.0, 10.0, help="Longitud total en kilómetros")
+            radius_cm = st.number_input("Radio del Conductor (cm)", 0.5, 10.0, 1.77, 0.1, help="Radio exterior del conductor")
+            DMG_cm = st.number_input("Distancia Media Geométrica (cm)", 100.0, 2000.0, 700.0, 25.0, help="Entre conductores de fases")
         
-        # Parámetros Eléctricos con mejor validación
         with st.expander("⚡ Parámetros Eléctricos", expanded=True):
-            R_ohm = st.number_input("Resistencia Total por Fase", min_value=0.1, max_value=100.0, 
-                                  value=15.0, step=0.5, help="Resistencia total de la línea")
-            st.caption("📐 Unidad: Ω | Típico: 5-50 Ω para líneas largas")
-            
-            L_H = st.number_input("Inductancia Total por Fase", min_value=0.01, max_value=2.0, 
-                                value=0.35, step=0.01, format="%.3f", help="Inductancia total de la línea")
-            st.caption("📐 Unidad: H | Típico: 0.1-1.0 H")
-            
-            C_F = st.number_input("Capacitancia Total Fase-Neutro", min_value=0.1, max_value=20.0, 
-                                value=2.5, step=0.1, help="Capacitancia total fase-neutro")
-            st.caption("📐 Unidad: µF | Típico: 1-10 µF")
+            R_ohm = st.number_input("Resistencia Total por Fase (Ω)", 0.1, 100.0, 9.0, 0.5, help="Resistencia total de la línea")
+            L_H = st.number_input("Inductancia Total por Fase (H)", 0.01, 2.0, 0.18, 0.01, "%.3f", help="Inductancia total de la línea")
+            C_uF = st.number_input("Capacitancia Total Fase-Neutro (µF)", 0.1, 20.0, 2.15, 0.1, help="Capacitancia total fase-neutro")
         
-        # Condiciones de Operación
         with st.expander("🔌 Condiciones de Operación", expanded=True):
-            voltage_kV = st.selectbox("Voltaje Nominal", [115.0, 230.0, 500.0], index=1, 
-                                    help="Voltajes estándar en Colombia")
-            st.caption("📐 Unidad: kV | Estándares colombianos")
-            
-            power_MVA = st.slider("Potencia a Transmitir", 50, 1000, 300, 10, 
-                                help="Potencia aparente total")
-            st.caption("📐 Unidad: MVA")
-            
-            power_factor = st.slider("Factor de Potencia (en atraso)", 0.80, 1.0, 0.95, 0.01,
-                                   help="Factor de potencia de la carga")
-            if power_factor < 0.85:
-                st.warning("⚠️ Factor de potencia bajo")
+            voltage_kV = st.selectbox("Voltaje Nominal (kV)", [115.0, 230.0, 500.0], index=1, help="Voltajes estándar en Colombia")
+            power_MVA = st.slider("Potencia a Transmitir (MVA)", 50, 1000, 280, 10, help="Potencia aparente total")
+            power_factor = st.slider("Factor de Potencia (en atraso)", 0.80, 1.0, 0.98, 0.01, help="Factor de potencia de la carga")
         
-        # Condiciones Ambientales
         with st.expander("🌡️ Condiciones Ambientales", expanded=True):
-            temp_C = st.slider("Temperatura", -10, 50, 20, help="Temperatura ambiente")
-            st.caption("📐 Unidad: °C")
-            
-            pressure_atm = st.slider("Presión Atmosférica", 0.70, 1.05, 0.85, 
-                                   help="Presión atmosférica (varía con altitud)")
-            st.caption("📐 Unidad: atm | 1.0 atm = nivel del mar")
-            
-            roughness_factor = st.slider("Factor de Rugosidad del Conductor", 0.70, 1.0, 0.82,
-                                        help="0.7=rugoso, 1.0=liso")
+            temp_C = st.slider("Temperatura (°C)", -10, 50, 25, help="Temperatura ambiente")
+            pressure_atm = st.slider("Presión Atmosférica (atm)", 0.70, 1.05, 1.0, help="Presión atmosférica (varía con altitud)")
+            roughness_factor = st.slider("Factor de Rugosidad del Conductor", 0.70, 1.0, 0.85, help="0.7=rugoso, 1.0=liso")
     
     st.subheader("🔍 Validación de Datos de Entrada")
     errors, warnings = validate_input_data(voltage_kV, power_MVA, length_km, R_ohm, 
-                                         L_H, C_F, power_factor, radius_cm, DMG_cm)
+                                         L_H, C_uF, power_factor, radius_cm, DMG_cm)
     
     if errors:
-        for error in errors:
-            st.error(error)
+        for error in errors: st.error(error)
         st.stop()
-    
     if warnings:
-        for warning in warnings:
-            st.warning(warning)
+        for warning in warnings: st.warning(warning)
     
-    # Área de Contenido Principal
     col1, col2 = st.columns([1, 1])
     
     with col1:
         st.subheader("📊 Análisis en Tiempo Real")
         
         if st.button("🚀 Analizar Rendimiento de la Línea de Transmisión", type="primary"):
-            # Preparar parámetros
             line_params = {
                 "resistance_total_ohm": R_ohm,
                 "inductance_total_H": L_H,
-                "capacitance_total_F": C_F * 1e-6,  # Convertir a Faradios
+                "capacitance_total_F": C_uF * 1e-6,
                 "length_km": length_km,
                 "conductor_radius_cm": radius_cm,
                 "DMG_cm": DMG_cm,
-                "voltage_kV": voltage_kV  # Added for visualizations
+                "voltage_kV": voltage_kV
             }
-            
             operating_conditions = {
                 "reception_voltage_kV": voltage_kV,
                 "reception_power_MVA": power_MVA,
                 "power_factor": power_factor
             }
-            
             environmental_conditions = {
                 "roughness_factor": roughness_factor,
                 "temperature_C": temp_C,
                 "pressure_atm": pressure_atm
             }
             
-            # Realizar análisis
             with st.spinner('🔄 Realizando cálculos avanzados...'):
-                time.sleep(1)  # Simular tiempo de procesamiento
+                time.sleep(1)
                 results = st.session_state.analyzer.generate_performance_analysis(
                     line_params, operating_conditions, environmental_conditions
                 )
                 st.session_state.results = results
-                st.session_state.line_params = line_params  # Store for visualizations
+                st.session_state.line_params = line_params
         
         if 'results' in st.session_state:
             results = st.session_state.results
             
-            # Check for errors
             if any('error' in section for section in results.values() if isinstance(section, dict)):
                 st.error("❌ Error en los cálculos. Verifique los parámetros de entrada.")
                 return
             
-            # Get regulatory context
             reg_context = get_regulatory_context(
                 results['regulation']['regulation_%'], 
                 voltage_kV, 
                 results['losses']['efficiency_%']
             )
             
-            # Indicadores Clave con Contexto Regulatorio
             st.subheader("📈 Indicadores Clave de Rendimiento")
             
             col_a, col_b, col_c = st.columns(3)
             with col_a:
                 eff_ctx = reg_context['efficiency']
-                st.metric(
-                    "Eficiencia del Sistema", 
-                    f"{results['losses']['efficiency_%']:.2f}%",
-                    delta=f"-{results['losses']['losses_percentage']:.3f}% pérdidas"
-                )
-                if eff_ctx['color'] == 'success':
-                    st.success(f"{eff_ctx['status']}: {eff_ctx['message']}")
-                elif eff_ctx['color'] == 'warning':
-                    st.warning(f"{eff_ctx['status']}: {eff_ctx['message']}")
-                else:
-                    st.error(f"{eff_ctx['status']}: {eff_ctx['message']}")
+                st.metric("Eficiencia del Sistema", f"{results['losses']['efficiency_%']:.2f}%", delta=f"-{results['losses']['losses_percentage']:.3f}% pérdidas")
+                if eff_ctx['color'] == 'success': st.success(f"{eff_ctx['status']}: {eff_ctx['message']}")
+                elif eff_ctx['color'] == 'warning': st.warning(f"{eff_ctx['status']}: {eff_ctx['message']}")
+                else: st.error(f"{eff_ctx['status']}: {eff_ctx['message']}")
             
             with col_b:
                 reg_ctx_data = reg_context['regulation']
-                st.metric(
-                    "Regulación de Voltaje", 
-                    f"{results['regulation']['regulation_%']:.3f}%",
-                    delta="Menor es mejor"
-                )
-                if reg_ctx_data['color'] == 'success':
-                    st.success(f"{reg_ctx_data['status']}: {reg_ctx_data['message']}")
-                elif reg_ctx_data['color'] == 'warning':
-                    st.warning(f"{reg_ctx_data['status']}: {reg_ctx_data['message']}")
-                else:
-                    st.error(f"{reg_ctx_data['status']}: {reg_ctx_data['message']}")
+                st.metric("Regulación de Voltaje", f"{results['regulation']['regulation_%']:.3f}%", delta="Menor es mejor")
+                if reg_ctx_data['color'] == 'success': st.success(f"{reg_ctx_data['status']}: {reg_ctx_data['message']}")
+                elif reg_ctx_data['color'] == 'warning': st.warning(f"{reg_ctx_data['status']}: {reg_ctx_data['message']}")
+                else: st.error(f"{reg_ctx_data['status']}: {reg_ctx_data['message']}")
             
             with col_c:
                 corona_data = results['corona']
-                st.metric(
-                    "Riesgo de Corona", 
-                    corona_data['risk_level'],
-                    delta=f"{corona_data['safety_margin_%']:.1f}% margen"
-                )
+                st.metric("Riesgo de Corona", corona_data['risk_level'], delta=f"{corona_data['safety_margin_%']:.1f}% margen")
                 st.info(f"💡 {corona_data['recommendation']}")
     
     with col2:
@@ -619,17 +514,11 @@ def main():
                 st.session_state.results, st.session_state.line_params
             )
             
-            # Display visualizations in tabs
             viz_tab1, viz_tab2, viz_tab3 = st.tabs(["📐 Fasores", "📈 Sensibilidad", "📊 Perfil V"])
             
-            with viz_tab1:
-                st.plotly_chart(phasor_fig, use_container_width=True)
-            
-            with viz_tab2:
-                st.plotly_chart(sensitivity_fig, use_container_width=True)
-            
-            with viz_tab3:
-                st.plotly_chart(voltage_profile_fig, use_container_width=True)
+            with viz_tab1: st.plotly_chart(phasor_fig, use_container_width=True)
+            with viz_tab2: st.plotly_chart(sensitivity_fig, use_container_width=True)
+            with viz_tab3: st.plotly_chart(voltage_profile_fig, use_container_width=True)
             
         else:
             st.info("👆 Haz clic en 'Analizar' para generar las visualizaciones avanzadas")
@@ -640,7 +529,6 @@ def main():
         
         results = st.session_state.results
         
-        # Crear pestañas para diferentes análisis
         tab1, tab2, tab3, tab4 = st.tabs(["🔋 Análisis de Potencia", "📈 Análisis de Voltaje", "⚠️ Análisis de Corona", "📊 Resumen Ejecutivo"])
         
         with tab1:
@@ -654,12 +542,9 @@ def main():
                 st.write(f"• **Eficiencia del Sistema:** {losses_data['efficiency_%']:.3f}%")
                 
                 st.write("**🔍 Contexto Técnico:**")
-                if losses_data['losses_percentage'] < 2:
-                    st.success("✅ Pérdidas muy bajas - Línea eficiente")
-                elif losses_data['losses_percentage'] < 5:
-                    st.warning("⚠️ Pérdidas moderadas - Aceptable")
-                else:
-                    st.error("❌ Pérdidas altas - Revisar diseño")
+                if losses_data['losses_percentage'] < 2: st.success("✅ Pérdidas muy bajas - Línea eficiente")
+                elif losses_data['losses_percentage'] < 5: st.warning("⚠️ Pérdidas moderadas - Aceptable")
+                else: st.error("❌ Pérdidas altas - Revisar diseño")
             
             with col_2:
                 st.write("**⚡ Medidor de Eficiencia:**")
@@ -681,11 +566,9 @@ def main():
                 st.write(f"• **Impedancia Característica:** {regulation_data.get('impedance_magnitude_ohm', 'N/A'):.1f} Ω")
                 st.write(f"• **Constante de Propagación:** {regulation_data.get('propagation_constant', 'N/A'):.6f}")
                 
-                # Regulatory compliance indicator
                 limit = RegulatoryStandards.VOLTAGE_REGULATION_LIMITS.get(voltage_kV, 5.0)
-                compliance_pct = (limit - regulation_data['regulation_%']) / limit * 100
-                st.metric("Cumplimiento CREG", f"{compliance_pct:.1f}%", 
-                         delta=f"Límite: {limit}%")
+                compliance_pct = (limit - regulation_data['regulation_%']) / limit * 100 if limit > 0 else 0
+                st.metric("Cumplimiento CREG", f"{compliance_pct:.1f}%", delta=f"Límite: {limit}%")
         
         with tab3:
             corona_data = results['corona']
@@ -702,18 +585,13 @@ def main():
                 st.write(f"• **Gradiente Eléctrico:** {corona_data.get('gradient_kV_per_cm', 0):.2f} kV/cm")
                 st.write(f"• **Recomendación:** {corona_data['recommendation']}")
                 
-                # Risk indicator
-                if corona_data['risk_level'] == "Riesgo Bajo":
-                    st.success(f"✅ {corona_data['risk_level']} - Operación segura")
-                elif corona_data['risk_level'] == "Riesgo Medio":
-                    st.warning(f"⚠️ {corona_data['risk_level']} - Monitorear")
-                else:
-                    st.error(f"❌ {corona_data['risk_level']} - Acción requerida")
+                if corona_data['risk_level'] == "Riesgo Bajo": st.success(f"✅ {corona_data['risk_level']} - Operación segura")
+                elif corona_data['risk_level'] == "Riesgo Medio": st.warning(f"⚠️ {corona_data['risk_level']} - Monitorear")
+                else: st.error(f"❌ {corona_data['risk_level']} - Acción requerida")
         
         with tab4:
             st.write("**📊 Resumen Ejecutivo del Análisis:**")
             
-            # Create summary metrics
             summary_col1, summary_col2, summary_col3 = st.columns(3)
             
             with summary_col1:
