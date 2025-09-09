@@ -567,8 +567,13 @@ def main():
                 st.write(f"• **Constante de Propagación:** {regulation_data.get('propagation_constant', 'N/A'):.6f}")
                 
                 limit = RegulatoryStandards.VOLTAGE_REGULATION_LIMITS.get(voltage_kV, 5.0)
-                compliance_pct = (limit - regulation_data['regulation_%']) / limit * 100 if limit > 0 else 0
-                st.metric("Cumplimiento CREG", f"{compliance_pct:.1f}%", delta=f"Límite: {limit}%")
+                margin = regulation_data['regulation_%'] - limit
+                st.metric(
+                    label="Regulación vs Límite CREG",
+                    value=f"{regulation_data['regulation_%']:.2f}%",
+                    delta=f"{margin:+.2f}% vs Límite ({limit}%)",
+                    delta_color="inverse"
+                )
         
         with tab3:
             corona_data = results['corona']
@@ -609,3 +614,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
